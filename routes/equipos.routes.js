@@ -1,12 +1,23 @@
-const express = require('express');
-const router = express.Router();
-const equiposController = require('../controllers/equipos.controller');
+// Este archivo define las rutas de la API para los equipos
+// y las vincula a los métodos del controlador.
 
-// Rutas CRUD para equipos
-router.get('/', equiposController.getAll);        // GET /api/equipos
-router.get('/:id', equiposController.getById);    // GET /api/equipos/:id
-router.post('/', equiposController.create);       // POST /api/equipos
-router.put('/:id', equiposController.update);     // PUT /api/equipos/:id
-router.delete('/:id', equiposController.delete);  // DELETE /api/equipos/:id
+const express = require("express");
+const router = express.Router();
+const equipos = require("../controllers/equipos.controller.js");
+
+// Crear un nuevo equipo
+router.post("/", equipos.create);
+
+// Obtener todos los equipos
+router.get("/", equipos.findAll);
+
+// Obtener un solo equipo con el ID
+router.get("/:id", equipos.findOne);
+
+// Actualizar un equipo con el ID
+router.put("/:id", equipos.update);
+
+// Eliminar un equipo con el ID
+router.delete("/:id", equipos.delete);
 
 module.exports = router;

@@ -1,105 +1,107 @@
-// controllers/user.controller.js
-const db = require('../services/db.service');
-const User = require('../models/user.models');
-const bcrypt = require('bcryptjs');
+// Este archivo contiene la lógica de la aplicación para las peticiones de los usuarios.
+// Recibe la petición, usa el modelo para interactuar con la base de datos y envía la respuesta.
 
-// Obtener todos los usuarios
-exports.getAll = async (req, res) => {
-  try {
-    const [rows] = await db.query(User.getAll);
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los usuarios', error: error.message });
-  }
-};
+const Usuarios = require("../models/usuarios.model.js");
 
-// Obtener usuario por ID
-exports.getById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [rows] = await db.query(User.getById, [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+// Crear y guardar un nuevo usuario
+exports.create = (req, res) => {
+    // Validar la petición
+    if (!req.body) {
+        res.status(400).send({
+            message: "¡El contenido no puede estar vacío!"
+        });
     }
 
-    res.json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener el usuario', error: error.message });
-  }
-};
-
-// Crear nuevo usuario
-exports.create = async (req, res) => {
-  try {
-    const { nombre, email, password, rol } = req.body;
-
-    if (!nombre || !email || !password || !rol) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    // Encriptar la contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const [result] = await db.query(User.create, [nombre, email, hashedPassword, rol]);
-
-    res.status(201).json({
-      id: result.insertId,
-      nombre,
-      email,
-      rol
+    // Crear un usuario
+    const usuario = new Usuarios({
+        nombre: req.body.nombre,
+        apellido: req.body.apellido,
+        email: req.body.email,
+        telefono: req.body.telefono,
+        direccion: req.body.direccion,
+        contrasena: req.body.contrasena, // En una aplicación real, se debe hashear esta contraseña
+        rol: req.body.rol
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
-  }
+
+    // Guardar el usuario en la base de datos
+    Usuarios.create(usuario, (err, data) => {
+        if (err)
+            res.status(500).send({
+                message: err.message || "Ocurrió un error al crear el usuario."
+            });
+        else res.send(data);
+    });
 };
 
-// Actualizar usuario
-exports.update = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nombre, email, password, rol } = req.body;
-
-    if (!nombre || !email || !rol) {
-      return res.status(400).json({ message: 'Nombre, email y rol son obligatorios' });
-    }
-
-    let hashedPassword;
-    if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
-    } else {
-      const [existing] = await db.query('SELECT password FROM users WHERE id = ?', [id]);
-      if (existing.length === 0) {
-        return res.status(404).json({ message: 'Usuario no encontrado' });
-      }
-      hashedPassword = existing[0].password;
-    }
-
-    const [result] = await db.query(User.update, [nombre, email, hashedPassword, rol, id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.json({ id, nombre, email, rol });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el usuario', error: error.message });
-  }
+// Obtener todos los usuarios de la base de datos
+exports.findAll = (req, res) => {
+    Usuarios.getAll((err, data) => {
+        if (err)
+            res.status(500).send({
+                message: err.message || "Ocurrió un error al recuperar los usuarios."
+            });
+        else res.send(data);
+    });
 };
 
-// Eliminar usuario
-exports.delete = async (req, res) => {
-  try {
-    const { id } = req.params;
+// Encontrar un solo usuario por su ID
+exports.findOne = (req, res) => {
+    Usuarios.findById(req.params.id, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.status(404).send({
+                    message: `No se encontró un usuario con id ${req.params.id}.`
+                });
+            } else {
+                res.status(500).send({
+                    message: "Error al recuperar el usuario con id " + req.params.id
+                });
+            }
+        } else res.send(data);
+    });
+};
 
-    const [result] = await db.query(User.delete, [id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+// Actualizar un usuario por su ID
+exports.update = (req, res) => {
+    // Validar la petición
+    if (!req.body) {
+        res.status(400).send({
+            message: "¡El contenido no puede estar vacío!"
+        });
     }
 
-    res.json({ message: 'Usuario eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el usuario', error: error.message });
-  }
+    Usuarios.updateById(
+        req.params.id,
+        new Usuarios(req.body),
+        (err, data) => {
+            if (err) {
+                if (err.kind === "not_found") {
+                    res.status(404).send({
+                        message: `No se encontró un usuario con id ${req.params.id}.`
+                    });
+                } else {
+                    res.status(500).send({
+                        message: "Error al actualizar el usuario con id " + req.params.id
+                    });
+                }
+            } else res.send(data);
+        }
+    );
+};
+
+// Eliminar un usuario con el ID especificado
+exports.delete = (req, res) => {
+    Usuarios.remove(req.params.id, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.status(404).send({
+                    message: `No se encontró un usuario con id ${req.params.id}.`
+                });
+            } else {
+                res.status(500).send({
+                    message: "No se pudo eliminar el usuario con id " + req.params.id
+                });
+            }
+        } else res.send({ message: `¡El usuario fue eliminado exitosamente!` });
+    });
 };

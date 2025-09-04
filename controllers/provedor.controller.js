@@ -1,91 +1,103 @@
-// controllers/proveedor.controller.js
-const db = require('../services/db.service');
-const Proveedor = require('../models/proveedor.models');
+// Este archivo contiene la lógica de la aplicación para las peticiones de los proveedores.
+// Recibe la petición, usa el modelo para interactuar con la base de datos y envía la respuesta.
 
-// Obtener todos los proveedores
-exports.getAll = async (req, res) => {
-  try {
-    const [rows] = await db.query(Proveedor.getAll);
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los proveedores', error: error.message });
-  }
-};
+const Proveedores = require("../models/proveedores.model.js");
 
-// Obtener proveedor por ID
-exports.getById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [rows] = await db.query(Proveedor.getById, [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Proveedor no encontrado' });
+// Crear y guardar un nuevo proveedor
+exports.create = (req, res) => {
+    // Validar la petición
+    if (!req.body) {
+        res.status(400).send({
+            message: "¡El contenido no puede estar vacío!"
+        });
     }
 
-    res.json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener el proveedor', error: error.message });
-  }
-};
-
-// Crear un nuevo proveedor
-exports.create = async (req, res) => {
-  try {
-    const { nombre, contacto, telefono, direccion } = req.body;
-
-    if (!nombre || !contacto || !telefono || !direccion) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    const [result] = await db.query(Proveedor.create, [nombre, contacto, telefono, direccion]);
-
-    res.status(201).json({
-      id: result.insertId,
-      nombre,
-      contacto,
-      telefono,
-      direccion
+    // Crear un proveedor
+    const proveedor = new Proveedores({
+        nombre: req.body.nombre,
+        equipos_proveidos: req.body.equipos_proveidos,
+        stock_proveido: req.body.stock_proveido
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el proveedor', error: error.message });
-  }
+
+    // Guardar el proveedor en la base de datos
+    Proveedores.create(proveedor, (err, data) => {
+        if (err)
+            res.status(500).send({
+                message: err.message || "Ocurrió un error al crear el proveedor."
+            });
+        else res.send(data);
+    });
 };
 
-// Actualizar un proveedor
-exports.update = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nombre, contacto, telefono, direccion } = req.body;
-
-    if (!nombre || !contacto || !telefono || !direccion) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    const [result] = await db.query(Proveedor.update, [nombre, contacto, telefono, direccion, id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Proveedor no encontrado' });
-    }
-
-    res.json({ id, nombre, contacto, telefono, direccion });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el proveedor', error: error.message });
-  }
+// Obtener todos los proveedores de la base de datos
+exports.findAll = (req, res) => {
+    Proveedores.getAll((err, data) => {
+        if (err)
+            res.status(500).send({
+                message: err.message || "Ocurrió un error al recuperar los proveedores."
+            });
+        else res.send(data);
+    });
 };
 
-// Eliminar un proveedor
-exports.delete = async (req, res) => {
-  try {
-    const { id } = req.params;
+// Encontrar un solo proveedor por su ID
+exports.findOne = (req, res) => {
+    Proveedores.findById(req.params.id, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.status(404).send({
+                    message: `No se encontró un proveedor con id ${req.params.id}.`
+                });
+            } else {
+                res.status(500).send({
+                    message: "Error al recuperar el proveedor con id " + req.params.id
+                });
+            }
+        } else res.send(data);
+    });
+};
 
-    const [result] = await db.query(Proveedor.delete, [id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Proveedor no encontrado' });
+// Actualizar un proveedor por su ID
+exports.update = (req, res) => {
+    // Validar la petición
+    if (!req.body) {
+        res.status(400).send({
+            message: "¡El contenido no puede estar vacío!"
+        });
     }
 
-    res.json({ message: 'Proveedor eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el proveedor', error: error.message });
-  }
+    Proveedores.updateById(
+        req.params.id,
+        new Proveedores(req.body),
+        (err, data) => {
+            if (err) {
+                if (err.kind === "not_found") {
+                    res.status(404).send({
+                        message: `No se encontró un proveedor con id ${req.params.id}.`
+                    });
+                } else {
+                    res.status(500).send({
+                        message: "Error al actualizar el proveedor con id " + req.params.id
+                    });
+                }
+            } else res.send(data);
+        }
+    );
+};
+
+// Eliminar un proveedor con el ID especificado
+exports.delete = (req, res) => {
+    Proveedores.remove(req.params.id, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.status(404).send({
+                    message: `No se encontró un proveedor con id ${req.params.id}.`
+                });
+            } else {
+                res.status(500).send({
+                    message: "No se pudo eliminar el proveedor con id " + req.params.id
+                });
+            }
+        } else res.send({ message: `¡El proveedor fue eliminado exitosamente!` });
+    });
 };

@@ -1,9 +1,9 @@
-// Este archivo contiene la lógica de la aplicación para las peticiones de los centros de costos.
+// Este archivo contiene la lógica de la aplicación para las peticiones de los equipos.
 // Recibe la petición, usa el modelo para interactuar con la base de datos y envía la respuesta.
 
-const CentroCostos = require("../models/centroCostos.model.js");
+const Equipos = require("../models/equipos.model.js");
 
-// Crear y guardar un nuevo centro de costos
+// Crear y guardar un nuevo equipo
 exports.create = (req, res) => {
     // Validar la petición
     if (!req.body) {
@@ -12,53 +12,53 @@ exports.create = (req, res) => {
         });
     }
 
-    // Crear un centro de costos
-    const centroCosto = new CentroCostos({
+    // Crear un equipo
+    const equipo = new Equipos({
         nombre: req.body.nombre,
-        id_sede: req.body.id_sede,
-        id_equipo: req.body.id_equipo,
-        id_seguimiento: req.body.id_seguimiento
+        descripcion: req.body.descripcion,
+        codigoProducto: req.body.codigoProducto,
+        id_categoria: req.body.id_categoria
     });
 
-    // Guardar el centro de costos en la base de datos
-    CentroCostos.create(centroCosto, (err, data) => {
+    // Guardar el equipo en la base de datos
+    Equipos.create(equipo, (err, data) => {
         if (err)
             res.status(500).send({
-                message: err.message || "Ocurrió un error al crear el centro de costos."
+                message: err.message || "Ocurrió un error al crear el equipo."
             });
         else res.send(data);
     });
 };
 
-// Obtener todos los centros de costos de la base de datos
+// Obtener todos los equipos de la base de datos
 exports.findAll = (req, res) => {
-    CentroCostos.getAll((err, data) => {
+    Equipos.getAll((err, data) => {
         if (err)
             res.status(500).send({
-                message: err.message || "Ocurrió un error al recuperar los centros de costos."
+                message: err.message || "Ocurrió un error al recuperar los equipos."
             });
         else res.send(data);
     });
 };
 
-// Encontrar un solo centro de costos por su ID
+// Encontrar un solo equipo por su ID
 exports.findOne = (req, res) => {
-    CentroCostos.findById(req.params.id, (err, data) => {
+    Equipos.findById(req.params.id, (err, data) => {
         if (err) {
             if (err.kind === "not_found") {
                 res.status(404).send({
-                    message: `No se encontró un centro de costos con id ${req.params.id}.`
+                    message: `No se encontró un equipo con id ${req.params.id}.`
                 });
             } else {
                 res.status(500).send({
-                    message: "Error al recuperar el centro de costos con id " + req.params.id
+                    message: "Error al recuperar el equipo con id " + req.params.id
                 });
             }
         } else res.send(data);
     });
 };
 
-// Actualizar un centro de costos por su ID
+// Actualizar un equipo por su ID
 exports.update = (req, res) => {
     // Validar la petición
     if (!req.body) {
@@ -67,18 +67,18 @@ exports.update = (req, res) => {
         });
     }
 
-    CentroCostos.updateById(
+    Equipos.updateById(
         req.params.id,
-        new CentroCostos(req.body),
+        new Equipos(req.body),
         (err, data) => {
             if (err) {
                 if (err.kind === "not_found") {
                     res.status(404).send({
-                        message: `No se encontró un centro de costos con id ${req.params.id}.`
+                        message: `No se encontró un equipo con id ${req.params.id}.`
                     });
                 } else {
                     res.status(500).send({
-                        message: "Error al actualizar el centro de costos con id " + req.params.id
+                        message: "Error al actualizar el equipo con id " + req.params.id
                     });
                 }
             } else res.send(data);
@@ -86,19 +86,19 @@ exports.update = (req, res) => {
     );
 };
 
-// Eliminar un centro de costos con el ID especificado
+// Eliminar un equipo con el ID especificado
 exports.delete = (req, res) => {
-    CentroCostos.remove(req.params.id, (err, data) => {
+    Equipos.remove(req.params.id, (err, data) => {
         if (err) {
             if (err.kind === "not_found") {
                 res.status(404).send({
-                    message: `No se encontró un centro de costos con id ${req.params.id}.`
+                    message: `No se encontró un equipo con id ${req.params.id}.`
                 });
             } else {
                 res.status(500).send({
-                    message: "No se pudo eliminar el centro de costos con id " + req.params.id
+                    message: "No se pudo eliminar el equipo con id " + req.params.id
                 });
             }
-        } else res.send({ message: `¡El centro de costos fue eliminado exitosamente!` });
+        } else res.send({ message: `¡El equipo fue eliminado exitosamente!` });
     });
 };

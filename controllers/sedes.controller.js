@@ -1,90 +1,103 @@
-// controllers/sede.controller.js
-const db = require('../services/db.service');
-const Sede = require('../models/sede.models');
+// Este archivo contiene la lógica de la aplicación para las peticiones de las sedes.
+// Recibe la petición, usa el modelo para interactuar con la base de datos y envía la respuesta.
 
-// Obtener todas las sedes
-exports.getAll = async (req, res) => {
-  try {
-    const [rows] = await db.query(Sede.getAll);
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener las sedes', error: error.message });
-  }
-};
+const Sedes = require("../models/sedes.model.js");
 
-// Obtener sede por ID
-exports.getById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [rows] = await db.query(Sede.getById, [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Sede no encontrada' });
+// Crear y guardar una nueva sede
+exports.create = (req, res) => {
+    // Validar la petición
+    if (!req.body) {
+        res.status(400).send({
+            message: "¡El contenido no puede estar vacío!"
+        });
     }
 
-    res.json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener la sede', error: error.message });
-  }
-};
-
-// Crear nueva sede
-exports.create = async (req, res) => {
-  try {
-    const { nombre, direccion, telefono } = req.body;
-
-    if (!nombre || !direccion || !telefono) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    const [result] = await db.query(Sede.create, [nombre, direccion, telefono]);
-
-    res.status(201).json({
-      id: result.insertId,
-      nombre,
-      direccion,
-      telefono
+    // Crear una sede
+    const sede = new Sedes({
+        id_sede: req.body.id_sede,
+        nombre: req.body.nombre,
+        direccion: req.body.direccion
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear la sede', error: error.message });
-  }
+
+    // Guardar la sede en la base de datos
+    Sedes.create(sede, (err, data) => {
+        if (err)
+            res.status(500).send({
+                message: err.message || "Ocurrió un error al crear la sede."
+            });
+        else res.send(data);
+    });
 };
 
-// Actualizar sede
-exports.update = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nombre, direccion, telefono } = req.body;
-
-    if (!nombre || !direccion || !telefono) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    const [result] = await db.query(Sede.update, [nombre, direccion, telefono, id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Sede no encontrada' });
-    }
-
-    res.json({ id, nombre, direccion, telefono });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar la sede', error: error.message });
-  }
+// Obtener todas las sedes de la base de datos
+exports.findAll = (req, res) => {
+    Sedes.getAll((err, data) => {
+        if (err)
+            res.status(500).send({
+                message: err.message || "Ocurrió un error al recuperar las sedes."
+            });
+        else res.send(data);
+    });
 };
 
-// Eliminar sede
-exports.delete = async (req, res) => {
-  try {
-    const { id } = req.params;
+// Encontrar una sola sede por su ID
+exports.findOne = (req, res) => {
+    Sedes.findById(req.params.id, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.status(404).send({
+                    message: `No se encontró una sede con id ${req.params.id}.`
+                });
+            } else {
+                res.status(500).send({
+                    message: "Error al recuperar la sede con id " + req.params.id
+                });
+            }
+        } else res.send(data);
+    });
+};
 
-    const [result] = await db.query(Sede.delete, [id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Sede no encontrada' });
+// Actualizar una sede por su ID
+exports.update = (req, res) => {
+    // Validar la petición
+    if (!req.body) {
+        res.status(400).send({
+            message: "¡El contenido no puede estar vacío!"
+        });
     }
 
-    res.json({ message: 'Sede eliminada correctamente' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar la sede', error: error.message });
-  }
+    Sedes.updateById(
+        req.params.id,
+        new Sedes(req.body),
+        (err, data) => {
+            if (err) {
+                if (err.kind === "not_found") {
+                    res.status(404).send({
+                        message: `No se encontró una sede con id ${req.params.id}.`
+                    });
+                } else {
+                    res.status(500).send({
+                        message: "Error al actualizar la sede con id " + req.params.id
+                    });
+                }
+            } else res.send(data);
+        }
+    );
+};
+
+// Eliminar una sede con el ID especificado
+exports.delete = (req, res) => {
+    Sedes.remove(req.params.id, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.status(404).send({
+                    message: `No se encontró una sede con id ${req.params.id}.`
+                });
+            } else {
+                res.status(500).send({
+                    message: "No se pudo eliminar la sede con id " + req.params.id
+                });
+            }
+        } else res.send({ message: `¡La sede fue eliminada exitosamente!` });
+    });
 };
