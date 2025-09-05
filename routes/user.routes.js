@@ -4,6 +4,8 @@
 const express = require("express");
 const router = express.Router();
 const usuarios = require("../controllers/usuarios.controller.js");
+const API_URL = "http://localhost:3000/api/users";
+
 
 // Crear un nuevo usuario
 router.post("/", usuarios.create);
